@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="admin_session_user_login_success">
+        <observer name="he_twofactorauth_observer" instance="HE\TwoFactorAuth\Observer\admin_user_authenticate_after"/>
+    </event>
+    <event name="adminhtml_block_html_before">
+        <observer name="he_twofactorauth_observer" instance="HE\TwoFactorAuth\Observer\googleClearSecretCheck"/>
+    </event>
+    <event name="model_save_before">
+        <observer name="he_twofactorauth_observer" instance="HE\TwoFactorAuth\Observer\googleSaveClear"/>
+    </event>
+</config>

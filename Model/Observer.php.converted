@@ -1,0 +1,276 @@
+<?php
+namespace HE\TwoFactorAuth\Model;
+
+
+/*
+ * Author   : Greg Croasdill
+ *            Human Element, Inc http://www.human-element.com
+ *
+ * License  : GPL  -- https://www.gnu.org/copyleft/gpl.html
+ *
+ * Observer watches login attempts (currently admin only) and will enforce multi-factor
+ * authentication if not disabled.
+ *
+ * For more information on Duo security's API, please see -
+ *   https://www.duosecurity.com
+ */
+
+class Observer
+{
+    protected $_allowedActions = array('login', 'forgotpassword');
+
+    /**
+     * @var \HE\TwoFactorAuth\Helper\Data
+     */
+    protected $twoFactorAuthHelper;
+
+    /**
+     * @var \Magento\Backend\Model\Auth\Session
+     */
+    protected $backendAuthSession;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    protected $logger;
+
+    /**
+     * @var \Magento\Backend\Helper\Data
+     */
+    protected $backendHelper;
+
+    /**
+     * @var \Magento\Framework\App\Request\Http
+     */
+    protected $request;
+
+    /**
+     * @var \Magento\Backend\Model\Session
+     */
+    protected $backendSession;
+
+    public function __construct(
+        \HE\TwoFactorAuth\Helper\Data $twoFactorAuthHelper,
+        \Magento\Backend\Model\Auth\Session $backendAuthSession,
+        \Psr\Log\LoggerInterface $logger,
+        \Magento\Backend\Helper\Data $backendHelper,
+        \Magento\Framework\App\Request\Http $request,
+        \Magento\Backend\Model\Session $backendSession
+    )
+    {
+        $this->twoFactorAuthHelper = $twoFactorAuthHelper;
+        $this->backendAuthSession = $backendAuthSession;
+        $this->logger = $logger;
+        $this->backendHelper = $backendHelper;
+        $this->request = $request;
+        $this->backendSession = $backendSession;
+        $this->_shouldLog = $this->twoFactorAuthHelper->shouldLog();
+    }
+
+    public function admin_user_authenticate_after($observer)
+    {
+        if ($this->twoFactorAuthHelper->isDisabled()) {
+            return;
+        }
+
+        // check ip-whitelist
+        if ($this->twoFactorAuthHelper->inWhitelist( Mage::helper('core/http')->getRemoteAddr() )) { 
+            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE);
+        }
+
+        if ($this->backendAuthSession->get2faState() != \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE) {
+
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "authenticate_after - get2faState is not active");
+            }
+
+            // set we are processing 2f login
+            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_PROCESSING);
+
+            $provider = $this->twoFactorAuthHelper->getProvider();
+
+            //redirect to the 2f login page
+            $twoFactAuthPage = $this->backendHelper->getUrl("adminhtml/twofactor/$provider");
+
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "authenticate_after - redirect to $twoFactAuthPage");
+            }
+
+            Mage::app()->getResponse()
+                ->setRedirect($twoFactAuthPage)
+                ->sendResponse();
+            exit();
+        } else {
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "authenticate_after - getValid2Fa is true");
+            }
+        }
+    }
+
+    /***
+     * controller to check for valid 2fa
+     * admin states
+     *
+     * @param $observer
+     */
+
+    public function check_twofactor_active($observer)
+    {
+        if ($this->twoFactorAuthHelper->isDisabled()) {
+            return;
+        }
+
+        $request = $observer->getControllerAction()->getRequest();
+        $tfaState = $this->backendAuthSession->get2faState();
+        $action = $this->request->getActionName();
+
+        switch ($tfaState) {
+            case \HE\TwoFactorAuth\Model\Validate::TFA_STATE_NONE:
+                if ($this->_shouldLog) {
+                    $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state none");
+                }
+                break;
+            case \HE\TwoFactorAuth\Model\Validate::TFA_STATE_PROCESSING:
+                if ($this->_shouldLog) {
+                    $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state processing");
+                }
+                break;
+            case \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE:
+                if ($this->_shouldLog) {
+                    $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state active");
+                }
+                break;
+            default:
+                if ($this->_shouldLog) {
+                    $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state unknown - ".$tfaState);
+                }
+        }
+
+        if ($action == 'logout') {
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - logout");
+            }
+            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_NONE);
+
+            return $this;
+        }
+
+        if (in_array($action, $this->_allowedActions)) {
+            return $this;
+        }
+
+        if ($request->getControllerName() == 'twofactor'
+            || $tfaState == \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE
+        ) {
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - return controller twofactor or is active");
+            }
+
+            return $this;
+        }
+
+        if ($this->backendAuthSession->get2faState() != \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE) {
+
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - not active, try again");
+            }
+
+            $msg = __(
+                'You must complete Two Factor Authentication before accessing Magento administration'
+            );
+            $this->backendSession->addError($msg);
+
+            // set we are processing 2f login
+            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_PROCESSING);
+
+            $provider = $this->twoFactorAuthHelper->getProvider();
+            $twoFactAuthPage = $this->backendHelper->getUrl("adminhtml/twofactor/$provider");
+
+            //disable the dispatch for now
+            $request = $this->request;
+            $action = $request->getActionName();
+            Mage::app()->getFrontController()
+                ->getAction()
+                ->setFlag($action, \Magento\Framework\App\Action\Action::FLAG_NO_DISPATCH, true);
+
+            $response = Mage::app()->getResponse();
+
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - redirect to $twoFactAuthPage");
+            }
+
+            $response->setRedirect($twoFactAuthPage)->sendResponse();
+            exit();
+        }
+    }
+
+    /* 
+     * Add a fieldset and field to the admin edit user form
+     * in order to allow selective clearing of a users shared secret (google)
+     */
+
+    public function googleClearSecretCheck(\Magento\Framework\Event\Observer $observer)
+    {
+        $block = $observer->getEvent()->getBlock();
+
+        if (!isset($block)) {
+            return $this;
+        }
+
+        if ($block->getType() == 'adminhtml/permissions_user_edit_form') {
+
+            // check that google is set for twofactor authentication            
+            if ($this->twoFactorAuthHelper->getProvider() == 'google') {
+                //create new custom fieldset 'website'
+                $form = $block->getForm();
+                $fieldset = $form->addFieldset(
+                    'website_field', array(
+                                       'legend' => 'Google Authenticator',
+                                       'class'  => 'fieldset-wide'
+                                   )
+                );
+
+                $fieldset->addField(
+                    'checkbox', 'checkbox', array(
+                                  'label'              => __(
+                                      'Reset Google Authenticator'
+                                  ),
+                                  'name'               => 'clear_google_secret',
+                                  'checked'            => false,
+                                  'onclick'            => "",
+                                  'onchange'           => "",
+                                  'value'              => '1',
+                                  'disabled'           => false,
+                                  'after_element_html' => '<small>Check this and save to reset this user\'s Google Authenticator.<br />They will need to use the QR code to reconnect their device after their next successful login.</small>',
+                                  'tabindex'           => 1
+                              )
+                );
+            }
+        }
+    }
+
+
+    /*
+     * Clear a user's google secret field if request
+     *
+     */
+    public function googleSaveClear(\Magento\Framework\Event\Observer $observer)
+    {
+        // check that a user record has been saved
+
+        // if google is turned and 2fa active...
+        if (($this->twoFactorAuthHelper->getProvider() == 'google')
+            && (!$this->twoFactorAuthHelper->isDisabled())
+        ) {
+            $params = $this->request->getParams();
+            if (isset($params['clear_google_secret'])) {
+                if ($params['clear_google_secret'] == 1) {
+                    $object = $observer->getEvent()->getObject();
+                    $object->setTwofactorGoogleSecret(''); // just clear the secret
+
+                    $this->logger->log(\Monolog\Logger::EMERGENCY, "Clearing google secret for admin user (".$object->getUsername().")");
+                }
+            }
+        }
+    }
+}

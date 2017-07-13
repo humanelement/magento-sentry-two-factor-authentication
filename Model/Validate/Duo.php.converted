@@ -1,0 +1,149 @@
+<?php
+namespace HE\TwoFactorAuth\Model\Validate;
+
+/*
+ * Author   : Greg Croasdill
+ *            Human Element, Inc http://www.human-element.com
+ *
+ * License  : GPL  -- https://www.gnu.org/copyleft/gpl.html
+ *
+ * For more information on Duo security's API, please see -
+ *   https://www.duosecurity.com
+ */
+
+include_once Mage::getBaseDir('lib') . DS . 'Duo' . DS . 'duo_web.php';
+
+class Duo extends \HE\TwoFactorAuth\Model\Validate
+{
+
+    /**
+     * @var \HE\TwoFactorAuth\Helper\Data
+     */
+    protected $twoFactorAuthHelper;
+
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    protected $scopeConfig;
+
+    /**
+     * @var \Magento\Backend\Model\Session
+     */
+    protected $backendSession;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    protected $logger;
+
+    /**
+     * @var \HE\TwoFactorAuth\Model\Validate\Duo\RequestFactory
+     */
+    protected $twoFactorAuthValidateDuoRequestFactory;
+
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
+    protected $storeManager;
+
+    public function __construct(
+        \HE\TwoFactorAuth\Helper\Data $twoFactorAuthHelper,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        \Magento\Backend\Model\Session $backendSession,
+        \Psr\Log\LoggerInterface $logger,
+        \HE\TwoFactorAuth\Model\Validate\Duo\RequestFactory $twoFactorAuthValidateDuoRequestFactory,
+        \Magento\Store\Model\StoreManagerInterface $storeManager
+    )
+    {
+        $this->twoFactorAuthHelper = $twoFactorAuthHelper;
+        $this->scopeConfig = $scopeConfig;
+        $this->backendSession = $backendSession;
+        $this->logger = $logger;
+        $this->twoFactorAuthValidateDuoRequestFactory = $twoFactorAuthValidateDuoRequestFactory;
+        $this->storeManager = $storeManager;
+        $this->_helper = $this->twoFactorAuthHelper;
+
+        $this->_host = $this->scopeConfig->getValue('he2faconfig/duo/host', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $this->_ikey = Mage::helper('core')->decrypt($this->scopeConfig->getValue('he2faconfig/duo/ikey', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+        $this->_skey = Mage::helper('core')->decrypt($this->scopeConfig->getValue('he2faconfig/duo/skey', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+        $this->_akey = Mage::helper('core')->decrypt($this->scopeConfig->getValue('he2faconfig/duo/akey', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+
+        if (!($this->_host && $this->_ikey && $this->_skey && $this->_akey)) {
+            $this->_helper->disable2FA();
+            $msg = $this->_helper->__(
+                'Duo Twofactor Authentication is missing one or more settings. Please configure HE Two Factor Authentication.'
+            );
+            $this->backendSession->addError($msg);
+        }
+
+        $this->_shouldLog = $this->twoFactorAuthHelper->shouldLog();
+    }
+
+    public function signRequest($user)
+    {
+        if ($this->_shouldLog) {
+            $this->logger->log(\Monolog\Logger::EMERGENCY, "in signRequest with $user");
+        }
+        $sig_request = Duo::signRequest($this->_ikey, $this->_skey, $this->_akey, $user);
+
+        return $sig_request;
+    }
+
+    public function verifyResponse($response)
+    {
+        $verified = Duo::verifyResponse($this->_ikey, $this->_skey, $this->_akey, $response);
+
+        return ($verified != null);
+    }
+
+    public function getHost()
+    {
+        return $this->_host;
+    }
+
+    public function check()
+    {
+        return $this->twoFactorAuthValidateDuoRequestFactory->create()->check();
+    }
+
+    public function isValid()
+    {
+
+        $status = \HE\TwoFactorAuth\Model\Validate::TFA_CHECK_FAIL;
+
+        //TODO - Use provider based checks instead of hardcoding for Duo
+        if (!$this->twoFactorAuthValidateDuoRequestFactory->create()->ping()) {
+            $msg = $this->_helper->__('Can not connect to specified Duo API server - TFA settings not validated');
+        } elseif (!$this->check()) {
+            $msg = $this->_helper->__(
+                'Credentials for Duo API server not accepted, please check - TFA settings not validated'
+            );
+        } else {
+            $status = \HE\TwoFactorAuth\Model\Validate::TFA_CHECK_SUCCESS;
+            $msg = $this->_helper->__('Credentials for Duo API server accepted - TFA settings validated');
+        }
+
+        //let the user know the status
+        if ($status == \HE\TwoFactorAuth\Model\Validate::TFA_CHECK_SUCCESS) {
+            //Mage::getSingleton('adminhtml/session')->addSuccess($msg);
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::ERROR, "isValid - $msg.");
+            }
+            $newMode = $this->_helper->__('VALID');
+        } else {
+            $this->backendSession->addError($msg);
+            if ($this->_shouldLog) {
+                $this->logger->log(\Monolog\Logger::INFO, "isValid - $msg.");
+            }
+            $newMode = $this->_helper->__('NOT VALID');
+        }
+
+        //if mode changed, update config
+        if ($newMode <> $this->scopeConfig->getValue('he2faconfig/duo/validated', \Magento\Store\Model\ScopeInterface::SCOPE_STORE)) {
+            Mage::getModel('core/config')->saveConfig('he2faconfig/duo/validated', $newMode);
+            $this->storeManager->getStore()->resetConfig();
+        }
+
+        return $status;
+    }
+}

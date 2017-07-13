@@ -1,0 +1,7 @@
+<?php
+namespace HE\TwoFactorAuth\Model\Resource\Mysql4;
+
+
+class Setup extends \Magento\Framework\Setup\SetupInterface {
+
+}
