@@ -5,7 +5,7 @@
         <tab id="hei" translate="label" sortOrder="999999" class="hei-tab">
             <label>Human Element</label>
         </tab>
-        <section id="he_twofactorauth" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+        <section id="he2faconfig" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
             <label>Sentry Two Factor Authentication</label>
             <class>sentry-section</class>
             <tab>hei</tab>

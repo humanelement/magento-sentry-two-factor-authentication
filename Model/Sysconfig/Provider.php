@@ -8,6 +8,8 @@
 
 namespace HE\TwoFactorAuth\Model\Sysconfig;
 
+use Magento\Store\Model\ScopeInterface;
+
 class Provider
 {
     /**
@@ -25,20 +27,22 @@ class Provider
     }
 
     /**
-     * Options getter - creates a list of options from a list of providers in config.xml
+     * Creates a list of two factor providers
+     *
+     * @todo Should refactor providers in a way so that other extensions can add to the providers selection
+     * @return array
      */
     public function toOptionArray()
     {
-        // get the list of providers from the validator class
-        $providersXML = $this->scopeConfig->getValue('he2faconfig/providers', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        // Get the list of providers from the validator class
+        $providersXML = $this->scopeConfig->getValue('he2faconfig/providers', ScopeInterface::SCOPE_STORE);
+        $providers = [];
 
-        $providers = array();
-
-        foreach($providersXML as $provider => $node) {
-            $providers[] = array(
+        foreach ($providersXML as $provider => $node) {
+            $providers[] = [
                 'value' => $provider ,
                 'label' => $node['title']
-            );
+            ];
         }
 
         return $providers;
