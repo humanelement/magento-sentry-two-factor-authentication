@@ -5,7 +5,7 @@
         <tab id="hei" translate="label" sortOrder="999999" class="hei-tab">
             <label>Human Element</label>
         </tab>
-        <section id="he_twofactorauth" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+        <section id="he_twofactorauth" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
             <label>Sentry Two Factor Authentication</label>
             <class>sentry-section</class>
             <tab>hei</tab>
@@ -13,23 +13,22 @@
             <group id="hint" type="text" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="0">
                 <frontend_model>HE\TwoFactorAuth\Block\Adminhtml\System\Config\Fieldset\Hint</frontend_model>
             </group>
-            <group id="control" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
-                <!-- <logging translate="label"/> -->
+            <group id="control" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="0">
                 <label>Provider Selection</label>
                 <comment>Choose an authentication provider or disable multi-factor authentication</comment>
-                <field id="provider" translate="label">
+                <field id="provider" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Choose Two Factor Provider</label>
                     <source_model>HE\TwoFactorAuth\Model\Sysconfig\Provider</source_model>
                     <comment>Select the security provider for authentication</comment>
                 </field>
-                <field id="ipwhitelist" translate="label">
+                <field id="ipwhitelist" translate="label" type="textarea" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Whitelisted IP Addresses</label>
                     <comment>
                         <![CDATA[You may whitelist IP addresses here (one per line). Anyone logging in from a whitelisted
                      IP will not be required to perform two-factor authentication.]]>
                     </comment>
                 </field>
-                <field id="logaccess" translate="label" type="select">
+                <field id="logaccess" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Enable access logging</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>
@@ -37,7 +36,7 @@
                     two_factor_auth.log in Magento's log directory]]>
                     </comment>
                 </field>
-                <field id="logging" translate="label" type="select">
+                <field id="logging" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Enable debug logging</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>
@@ -63,21 +62,21 @@
                 <p>When setting up a new integration select either <strong>"Magento"</strong> or <strong>"Web SDK"</strong> as the type of integration.</p>
                 <p><strong>NOTE!</strong> You must have a DUO account before enabling this module.<br/><p>]]>
                 </comment>
-                <field id="ikey" translate="label" type="obscure">
+                <field id="ikey" translate="label comment" type="obscure" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Integration Key</label>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     <comment>The Integration Key from the Duo Security admin dashboard integrations page</comment>
                 </field>
-                <field id="skey" translate="label" type="obscure">
+                <field id="skey" translate="label comment" type="obscure" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Secret Key</label>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     <comment>The Secret Key from the Duo Security admin dashboard integrations page</comment>
                 </field>
-                <field id="host" translate="label" type="text">
+                <field id="host" translate="label comment" type="text" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Duo Security API hostname</label>
                     <comment>Supply the API hostname from the Duo Security admin dashboard integrations page</comment>
                 </field>
-                <field id="akey">
+                <field id="akey" translate="label comment" type="obscure" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Application Key</label>
                     <backend_model>HE\TwoFactorAuth\Model\Sysconfig\Appkey</backend_model>
                     <comment>
@@ -85,7 +84,7 @@
                     least 40 characters long. Use the autogenerated key above, or create one of your own.]]>
                     </comment>
                 </field>
-                <field id="validated">
+                <field id="validated" translate="label comment" type="label" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Settings Validated</label>
                     <comment>
                         <![CDATA[The authentication settings validation status. Duo authentication can not be used until
@@ -93,7 +92,7 @@
                     </comment>
                 </field>
             </group>
-            <group id="google" type="text" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="0" translate="label">
+            <group id="google" translate="label" type="text" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="0">
                 <label>Google Authenticate</label>
                 <comment>
                     <![CDATA[<p><strong>About Google Authenticate</strong><br/>Google Authenticate is a popular two-factor

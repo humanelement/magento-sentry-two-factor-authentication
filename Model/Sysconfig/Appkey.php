@@ -8,47 +8,61 @@
 
 namespace HE\TwoFactorAuth\Model\Sysconfig;
 
+use Magento\Framework\Exception\LocalizedException;
+
 class Appkey extends \Magento\Config\Model\Config\Backend\Encrypted
 {
+    const MINIMUM_LENGTH = 40;
+
     /**
+     * Check app key length before saving
+     *
+     * @TODO Check to see if Duo is enabled
      * @return mixed
+     * @throws LocalizedException
      */
     public function save()
     {
-        // TODO - check to see if Duo is enabled
-        $appkey = $this->getValue(); //get the value from our config
+        $appKey = $this->getValue();
 
-        if(strlen($appkey) < 40)   //exit if we're less than 50 characters
-        {
-            throw new \Magento\Framework\Exception\LocalizedException("The Duo application key needs to be at least 40 characters long.");
+        if (strlen($appKey) < self::MINIMUM_LENGTH) {
+            throw new LocalizedException("The Duo application key needs to be at least 40 characters long.");
         }
-        return parent::save();  //call original save method so whatever happened
+
+        return parent::save();
     }
 
     /**
+     * Generate an app key if one doesn't initially exist
      *
+     * @return void
      */
     protected function _afterLoad()
     {
         $value = (string)$this->getValue();
+
         if (empty($value)) {
-            $key = $this->generateKey(40);
+            $key = $this->generateKey(self::MINIMUM_LENGTH);
             $this->setValue($key);
         }
     }
 
     /**
+     * Generates a pseudo random key of specified length
+     *
      * @param int $length
      * @return string
      */
-    public function generateKey($length=40)
+    public function generateKey($length = self::MINIMUM_LENGTH)
     {
         $charset='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         $count = strlen($charset);
         $str = '';
+
         while ($length--) {
             $str .= $charset[mt_rand(0, $count-1)];
         }
+
         return $str;
     }
 }
