@@ -1,17 +1,18 @@
 <?php
-/*
- * Author   : Greg Croasdill
- *            Human Element, Inc http://www.human-element.com
+/**
+ * Human Element Inc.
  *
- * License  : GPL  -- https://www.gnu.org/copyleft/gpl.html
- *
- * For more information on Duo security's API, please see -
- *   https://www.duosecurity.com
+ * @package HE_TwoFactorAuth
+ * @copyright Copyright (c) 2017 Human Element Inc. (https://www.human-element.com)
  */
 
+namespace HE\TwoFactorAuth\Model\Sysconfig;
 
-class HE_TwoFactorAuth_Model_Sysconfig_Appkey extends Mage_Adminhtml_Model_System_Config_Backend_Encrypted
+class Appkey extends \Magento\Config\Model\Config\Backend\Encrypted
 {
+    /**
+     * @return mixed
+     */
     public function save()
     {
         // TODO - check to see if Duo is enabled
@@ -19,11 +20,14 @@ class HE_TwoFactorAuth_Model_Sysconfig_Appkey extends Mage_Adminhtml_Model_Syste
 
         if(strlen($appkey) < 40)   //exit if we're less than 50 characters
         {
-            Mage::throwException("The Duo application key needs to be at least 40 characters long.");
+            throw new \Magento\Framework\Exception\LocalizedException("The Duo application key needs to be at least 40 characters long.");
         }
         return parent::save();  //call original save method so whatever happened
     }
 
+    /**
+     *
+     */
     protected function _afterLoad()
     {
         $value = (string)$this->getValue();
@@ -33,7 +37,11 @@ class HE_TwoFactorAuth_Model_Sysconfig_Appkey extends Mage_Adminhtml_Model_Syste
         }
     }
 
-    function generateKey($length=40)
+    /**
+     * @param int $length
+     * @return string
+     */
+    public function generateKey($length=40)
     {
         $charset='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         $count = strlen($charset);

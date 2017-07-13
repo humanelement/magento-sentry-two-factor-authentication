@@ -1,30 +1,44 @@
 <?php
-
-/*
- * Author   : Greg Croasdill
- *            Human Element, Inc http://www.human-element.com
+/**
+ * Human Element Inc.
  *
- * License  : GPL  -- https://www.gnu.org/copyleft/gpl.html
- *
- * For more information on Duo security's API, please see -
- *   https://www.duosecurity.com
+ * @package HE_TwoFactorAuth
+ * @copyright Copyright (c) 2017 Human Element Inc. (https://www.human-element.com)
  */
 
-class HE_TwoFactorAuth_Model_Sysconfig_Provider
+namespace HE\TwoFactorAuth\Model\Sysconfig;
+
+class Provider
 {
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    protected $scopeConfig;
+
+    /**
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     */
+    public function __construct(
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+    ) {
+        $this->scopeConfig = $scopeConfig;
+    }
+
     /**
      * Options getter - creates a list of options from a list of providers in config.xml
      */
     public function toOptionArray()
     {
         // get the list of providers from the validator class
+        $providersXML = $this->scopeConfig->getValue('he2faconfig/providers', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
-        $providersXML = Mage::getStoreConfig('he2faconfig/providers');  //set in config.xml
-
-        $providers=array();
+        $providers = array();
 
         foreach($providersXML as $provider => $node) {
-            $providers[]=(array('value' => $provider , 'label' => $node['title']));
+            $providers[] = array(
+                'value' => $provider ,
+                'label' => $node['title']
+            );
         }
 
         return $providers;
