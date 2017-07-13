@@ -2,6 +2,6 @@
 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
     <event name="controller_action_postdispatch_adminhtml">
-        <observer name="he_twofactorauth_observer_check" instance="HE\TwoFactorAuth\Observer\check_twofactor_active"/>
+        <observer name="he_twofactorauth_observer_check" instance="HE\TwoFactorAuth\Observer\CheckTwoFactorActive"/>
     </event>
 </config>

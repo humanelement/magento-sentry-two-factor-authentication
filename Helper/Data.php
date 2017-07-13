@@ -1,43 +1,68 @@
 <?php
-
-/*
- * Author   : Greg Croasdill
- *            Human Element, Inc http://www.human-element.com
+/**
+ * Human Element Inc.
  *
- * License  : GPL  -- https://www.gnu.org/copyleft/gpl.html
- *
- * For more information on Duo security's API, please see -
- *   https://www.duosecurity.com
+ * @package HE_TwoFactorAuth
+ * @copyright Copyright (c) 2017 Human Element Inc. (https://www.human-element.com)
  */
 
-class HE_TwoFactorAuth_Helper_Data extends Mage_Core_Helper_Abstract
-{
+namespace HE\TwoFactorAuth\Helper;
 
-    public function __construct()
+use Magento\Store\Model\ScopeInterface;
+use Monolog\Logger;
+
+class Data extends \Magento\Framework\App\Helper\AbstractHelper
+{
+    /**
+     * @var \HE\TwoFactorAuth\Model\Validate\
+     */
+    protected $twoFactorAuthValidate;
+
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
+    protected $storeManager;
+
+    /**
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     */
+    public function __construct(
+        \Magento\Framework\App\Helper\Context $context,
+        \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate,
+        \Magento\Store\Model\StoreManagerInterface $storeManager
+    )
     {
-        $this->_provider = Mage::getStoreConfig('he2faconfig/control/provider');
-        $this->_logging = Mage::getStoreConfig('he2faconfig/control/logging');
-        $this->_logAccess = Mage::getStoreConfig('he2faconfig/control/logaccess');
+        $this->twoFactorAuthValidate = $twoFactorAuthValidate;
+        $this->storeManager = $storeManager;
+
+        parent::__construct($context);
+
         $this->_ipWhitelist = $this->getIPWhitelist();
     }
 
+    /**
+     * @return bool
+     */
     public function isDisabled()
     {
         $tfaFlag = Mage::getBaseDir('base') . '/tfaoff.flag';
+        $provider = $this->getProvider();
 
         if (file_exists($tfaFlag)) {
             if ($this->shouldLog()) {
-                Mage::log("isDisabled - Found tfaoff.flag, TFA disabled.", 0, "two_factor_auth.log");
+                $this->_logger->log(Logger::EMERGENCY, "isDisabled - Found tfaoff.flag, TFA disabled.");
             }
 
             return true;
         }
 
-        if (!$this->_provider || $this->_provider == 'disabled') {
+        if (!$provider || $provider == 'disabled') {
             return true;
         }
 
-        $method = Mage::getSingleton('he_twofactorauth/validate_' . $this->_provider);
+        $method = $this->twoFactorAuthValidate;
 
         if (!$method) {
             return true;
@@ -46,32 +71,47 @@ class HE_TwoFactorAuth_Helper_Data extends Mage_Core_Helper_Abstract
         return !$method->isValid();
     }
 
+    /**
+     * @return mixed
+     */
     public function getProvider()
     {
-        return $this->_provider;
+        return $this->scopeConfig->getValue('he2faconfig/control/provider', ScopeInterface::SCOPE_STORE);
     }
 
-
+    /**
+     * @return mixed
+     */
     public function shouldLog()
     {
-        return $this->_logging;
+        return $this->scopeConfig->getValue('he2faconfig/control/logging', ScopeInterface::SCOPE_STORE);
     }
 
+    /**
+     * @return mixed
+     */
     public function shouldLogAccess()
     {
-        return $this->_logAccess;
+        return $this->scopeConfig->getValue('he2faconfig/control/logaccess', ScopeInterface::SCOPE_STORE);
     }
 
+    /**
+     *
+     */
     public function disable2FA()
     {
         Mage::getModel('core/config')->saveConfig('he2faconfig/control/provider', 'disabled');
-        Mage::app()->getStore()->resetConfig();
+        $this->storeManager->getStore()->resetConfig();
     }
 
+    /**
+     * @return array
+     */
     private function getIPWhitelist()
     {
         $return = [];
-        $ips = preg_split("/\r\n|\n|\r/", trim(Mage::getStoreConfig('he2faconfig/control/ipwhitelist')));
+        $whitelist = $this->scopeConfig->getValue('he2faconfig/control/ipwhitelist', ScopeInterface::SCOPE_STORE);
+        $ips = preg_split("/\r\n|\n|\r/", trim($whitelist));
         foreach ($ips as $ip) { 
             if (filter_var($ip, FILTER_VALIDATE_IP)) { 
                 $return[] = trim($ip);
@@ -80,14 +120,19 @@ class HE_TwoFactorAuth_Helper_Data extends Mage_Core_Helper_Abstract
         return $return;
     }
 
-
+    /**
+     * @param $ip
+     * @return bool
+     */
     public function inWhitelist($ip) 
     {
-        if (count($this->_ipWhitelist) == 0) { return false; }
+        if (count($this->_ipWhitelist) == 0) {
+            return false;
+        }
 
         if (in_array( $ip, $this->_ipWhitelist )) { 
             if ( $this->shouldLogAccess() ) {
-                Mage::log("TFA bypassed for IP $ip - whitelisted", 0, "two_factor_auth.log");
+                $this->_logger->log(Logger::EMERGENCY, "TFA bypassed for IP $ip - whitelisted");
             }
             return true;
         }
@@ -95,5 +140,4 @@ class HE_TwoFactorAuth_Helper_Data extends Mage_Core_Helper_Abstract
             return false; 
         }
     }
-
 }
