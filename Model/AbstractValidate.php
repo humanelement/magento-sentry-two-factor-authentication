@@ -8,20 +8,11 @@
 
 namespace HE\TwoFactorAuth\Model;
 
+use HE\TwoFactorAuth\Model\Validate\ValidateInterface;
 use Magento\Framework\DataObject;
 
 abstract class AbstractValidate extends DataObject implements ValidateInterface
 {
-    const TFA_STATE_NONE = 0;
-
-    const TFA_STATE_PROCESSING = 1;
-
-    const TFA_STATE_ACTIVE = 2;
-
-    const TFA_CHECK_FAIL = 0;
-
-    const TFA_CHECK_SUCCESS = 1;
-
     /**
      * @var \HE\TwoFactorAuth\Helper\Data
      */
@@ -46,7 +37,6 @@ abstract class AbstractValidate extends DataObject implements ValidateInterface
     {
         $this->helper = $helper;
         $this->logger = $logger;
-        $this->scopeConfig = $scopeConfig;
 
         parent::__construct($data);
     }

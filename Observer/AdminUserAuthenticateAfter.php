@@ -8,6 +8,7 @@
 
 namespace HE\TwoFactorAuth\Observer;
 
+use HE\TwoFactorAuth\Model\Validate\ValidateInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 
@@ -85,17 +86,17 @@ class AdminUserAuthenticateAfter implements ObserverInterface
 
         // check ip-whitelist
         if ($this->twoFactorAuthHelper->inWhitelist( Mage::helper('core/http')->getRemoteAddr() )) {
-            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE);
+            $this->backendAuthSession->set2faState(ValidateInterface::TFA_STATE_ACTIVE);
         }
 
-        if ($this->backendAuthSession->get2faState() != \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE) {
+        if ($this->backendAuthSession->get2faState() != ValidateInterface::TFA_STATE_ACTIVE) {
 
             if ($this->_shouldLog) {
                 $this->logger->log(\Monolog\Logger::EMERGENCY, "authenticate_after - get2faState is not active");
             }
 
             // set we are processing 2f login
-            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_PROCESSING);
+            $this->backendAuthSession->set2faState(ValidateInterface::TFA_STATE_PROCESSING);
 
             $provider = $this->twoFactorAuthHelper->getProvider();
 

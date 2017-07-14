@@ -8,6 +8,7 @@
 
 namespace HE\TwoFactorAuth\Observer;
 
+use HE\TwoFactorAuth\Model\Validate\ValidateInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 
@@ -91,17 +92,17 @@ class CheckTwoFactorActive implements ObserverInterface
         $action = $this->request->getActionName();
 
         switch ($tfaState) {
-            case \HE\TwoFactorAuth\Model\Validate::TFA_STATE_NONE:
+            case ValidateInterface::TFA_STATE_NONE:
                 if ($this->_shouldLog) {
                     $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state none");
                 }
                 break;
-            case \HE\TwoFactorAuth\Model\Validate::TFA_STATE_PROCESSING:
+            case ValidateInterface::TFA_STATE_PROCESSING:
                 if ($this->_shouldLog) {
                     $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state processing");
                 }
                 break;
-            case \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE:
+            case ValidateInterface::TFA_STATE_ACTIVE:
                 if ($this->_shouldLog) {
                     $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - tfa state active");
                 }
@@ -116,7 +117,7 @@ class CheckTwoFactorActive implements ObserverInterface
             if ($this->_shouldLog) {
                 $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - logout");
             }
-            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_NONE);
+            $this->backendAuthSession->set2faState(ValidateInterface::TFA_STATE_NONE);
 
             return $this;
         }
@@ -126,7 +127,7 @@ class CheckTwoFactorActive implements ObserverInterface
         }
 
         if ($request->getControllerName() == 'twofactor'
-            || $tfaState == \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE
+            || $tfaState == ValidateInterface::TFA_STATE_ACTIVE
         ) {
             if ($this->_shouldLog) {
                 $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - return controller twofactor or is active");
@@ -135,7 +136,7 @@ class CheckTwoFactorActive implements ObserverInterface
             return $this;
         }
 
-        if ($this->backendAuthSession->get2faState() != \HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE) {
+        if ($this->backendAuthSession->get2faState() != ValidateInterface::TFA_STATE_ACTIVE) {
 
             if ($this->_shouldLog) {
                 $this->logger->log(\Monolog\Logger::EMERGENCY, "check_twofactor_active - not active, try again");
@@ -147,7 +148,7 @@ class CheckTwoFactorActive implements ObserverInterface
             $this->backendSession->addError($msg);
 
             // set we are processing 2f login
-            $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_PROCESSING);
+            $this->backendAuthSession->set2faState(ValidateInterface::TFA_STATE_PROCESSING);
 
             $provider = $this->twoFactorAuthHelper->getProvider();
             $twoFactAuthPage = $this->backendHelper->getUrl("adminhtml/twofactor/$provider");

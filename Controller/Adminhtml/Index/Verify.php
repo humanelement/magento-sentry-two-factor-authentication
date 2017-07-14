@@ -1,27 +1,16 @@
 <?php
-namespace HE\TwoFactorAuth\Controller\Adminhtml;
-
-
-/*
- * Author   : Greg Croasdill
- *            Human Element, Inc http://www.human-element.com
+/**
+ * Human Element Inc.
  *
- * License  : GPL  -- https://www.gnu.org/copyleft/gpl.html
- *
- * For more information on Duo security's API, please see -
- *   https://www.duosecurity.com
- *
- * For more information on Google Authenticator, please see -
- *   https://github.com/google/google-authenticator/wiki
- *
- * Some code based on previous work by Jonathan Day jonathan@aligent.com.au
- *   https://github.com/magento-hackathon/Magento-Two-factor-Authentication
- *
+ * @package HE_TwoFactorAuth
+ * @copyright Copyright (c) 2017 Human Element Inc. (https://www.human-element.com)
+ * @license GPL (https://www.gnu.org/copyleft/gpl.html)
  */
 
-class Twofactor extends \Magento\Backend\App\Action
-{
+namespace HE\TwoFactorAuth\Controller\Adminhtml;
 
+class Verify extends \Magento\Backend\App\Action
+{
     /**
      * @var \HE\TwoFactorAuth\Helper\Data
      */
@@ -68,6 +57,7 @@ class Twofactor extends \Magento\Backend\App\Action
     protected $twoFactorAuthValidateDuoRequestFactory;
 
     public function __construct(
+        \Magento\Backend\App\Action\Context $context,
         \HE\TwoFactorAuth\Helper\Data $twoFactorAuthHelper,
         \Psr\Log\LoggerInterface $logger,
         \Magento\Backend\Model\Session $backendSession,
@@ -87,45 +77,18 @@ class Twofactor extends \Magento\Backend\App\Action
         $this->userUserFactory = $userUserFactory;
         $this->twoFactorAuthValidateGoogleFactory = $twoFactorAuthValidateGoogleFactory;
         $this->twoFactorAuthValidateDuoRequestFactory = $twoFactorAuthValidateDuoRequestFactory;
-    }
-    public function _construct()
-    {
+
         $this->_shouldLog = $this->twoFactorAuthHelper->shouldLog();
         $this->_shouldLogAccess = $this->twoFactorAuthHelper->shouldLogAccess();
-        parent::_construct();
+        parent::__construct($context);
     }
-
-    //need an action per provider so that we can load the correct 2fa form
-
-    public function duoAction()
-    {
-        if ($this->_shouldLog) {
-            $this->logger->log(\Monolog\Logger::EMERGENCY, "duoAction start");
-        }
-        $msg = __('Please complete the DUO two factor authentication');
-        $this->backendSession->addNotice($msg);
-
-        $this->loadLayout();
-        $this->renderLayout();
-    }
-
-
-    public function googleAction()
-    {
-        if ($this->_shouldLog) {
-            $this->logger->log(\Monolog\Logger::EMERGENCY, "googleAction start");
-        }
-        $this->loadLayout();
-        $this->renderLayout();
-    }
-
 
     /***
      * verify is a generic action, looks at the current config to get provider, then dispatches correct verify method
      *
      * @return $this
      */
-    public function verifyAction()
+    public function execute()
     {
         if ($this->_shouldLog) {
             $this->logger->log(\Monolog\Logger::EMERGENCY, "verifyAction start");
@@ -154,6 +117,9 @@ class Twofactor extends \Magento\Backend\App\Action
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     private function _verifyDuo()
     {
         $duoSigResp = $this->request->getPost('sig_response', null);
@@ -195,12 +161,15 @@ class Twofactor extends \Magento\Backend\App\Action
 
 
         $this->backendAuthSession
-            ->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE);
+            ->set2faState(\HE\TwoFactorAuth\Model\Validate\ValidateInterface::TFA_STATE_ACTIVE);
         $this->_redirect('*');
 
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     private function _verifyGoogle()
     {
         if ($this->_shouldLog) {
@@ -251,7 +220,7 @@ class Twofactor extends \Magento\Backend\App\Action
 
                     $msg = __("Valid code entered");
                     $this->backendSession->addSuccess($msg);
-                    $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate::TFA_STATE_ACTIVE);
+                    $this->backendAuthSession->set2faState(\HE\TwoFactorAuth\Model\Validate\ValidateInterface::TFA_STATE_ACTIVE);
                     $this->_redirect('*');
 
                     return $this;
@@ -304,6 +273,9 @@ class Twofactor extends \Magento\Backend\App\Action
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     private function _validateDuo()
     {
         if ($this->_shouldLog) {
