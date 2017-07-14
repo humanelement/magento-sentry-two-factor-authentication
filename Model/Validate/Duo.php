@@ -33,11 +33,6 @@ class Duo extends \HE\TwoFactorAuth\Model\AbstractValidate
     protected $storeManager;
 
     /**
-     * @var \Magento\Framework\Encryption\EncryptorInterface
-     */
-    protected $encryptor;
-
-    /**
      * Duo constructor.
      *
      * @param \HE\TwoFactorAuth\Helper\Data $helper
@@ -45,7 +40,6 @@ class Duo extends \HE\TwoFactorAuth\Model\AbstractValidate
      * @param \Magento\Backend\Model\Session $backendSession
      * @param Duo\RequestFactory $duoRequestFactory
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
-     * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
      * @param array $data
      */
     public function __construct(
@@ -54,14 +48,12 @@ class Duo extends \HE\TwoFactorAuth\Model\AbstractValidate
         \Magento\Backend\Model\Session $backendSession,
         \HE\TwoFactorAuth\Model\Validate\Duo\RequestFactory $duoRequestFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \Magento\Framework\Encryption\EncryptorInterface $encryptor,
         array $data = []
     )
     {
         $this->backendSession = $backendSession;
         $this->duoRequestFactory = $duoRequestFactory;
         $this->storeManager = $storeManager;
-        $this->encryptor = $encryptor;
 
         parent::__construct($helper, $logger, $data);
 

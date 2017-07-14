@@ -43,6 +43,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $storeManager;
 
     /**
+     * @var \Magento\Framework\Encryption\EncryptorInterface
+     */
+    protected $encryptor;
+
+    /**
      * Data constructor.
      *
      * @TODO Need to implement a factory or something to Inject the correct TwoFactor Provider via DI. Currently not in a working state
@@ -50,17 +55,21 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
      * @param \Magento\Framework\Filesystem $filesystem
+     * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
         \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \Magento\Framework\Filesystem $filesystem
+        \Magento\Framework\Filesystem $filesystem,
+        \Magento\Framework\Encryption\EncryptorInterface $encryptor
     )
     {
         $this->twoFactorAuthValidate = $twoFactorAuthValidate;
         $this->storeManager = $storeManager;
         $this->flagDir = $filesystem->getDirectoryWrite(self::FLAG_DIR);
+        $this->encryptor = $encryptor;
+
         parent::__construct($context);
     }
 
