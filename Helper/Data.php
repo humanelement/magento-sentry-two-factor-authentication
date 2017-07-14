@@ -43,10 +43,13 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $storeManager;
 
     /**
+     * Data constructor.
+     *
      * @TODO Need to implement a factory or something to Inject the correct TwoFactor Provider via DI. Currently not in a working state
      * @param \Magento\Framework\App\Helper\Context $context
      * @param \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\Framework\Filesystem $filesystem
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
@@ -157,5 +160,76 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         }
 
         return false;
+    }
+
+    /**
+     * Get Duo API Hostname
+     *
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->scopeConfig->getValue(
+            'he2faconfig/duo/host',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get the Duo Integration key
+     *
+     * @return string
+     */
+    public function getIKey()
+    {
+        return $this->encryptor->decrypt(
+            $this->scopeConfig->getValue(
+                'he2faconfig/duo/ikey',
+                ScopeInterface::SCOPE_STORE
+            )
+        );
+    }
+
+    /**
+     * Get the Duo Application key
+     *
+     * @return string
+     */
+    public function getAKey()
+    {
+        return $this->encryptor->decrypt(
+            $this->scopeConfig->getValue(
+                'he2faconfig/duo/akey',
+                ScopeInterface::SCOPE_STORE
+            )
+        );
+    }
+
+    /**
+     * Get the Duo Secret key
+     *
+     * @return string
+     */
+    public function getSKey()
+    {
+        return $this->encryptor->decrypt(
+            $this->scopeConfig->getValue(
+                'he2faconfig/duo/skey',
+                ScopeInterface::SCOPE_STORE
+            )
+        );
+    }
+
+    /**
+     * Get whether duo is validated
+     *
+     * @return string
+     */
+    public function getIsDuoValidated()
+    {
+        return $this->scopeConfig->getValue(
+            'he2faconfig/duo/validated',
+            ScopeInterface::SCOPE_STORE
+        );
     }
 }

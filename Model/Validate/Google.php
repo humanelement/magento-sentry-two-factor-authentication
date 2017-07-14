@@ -14,25 +14,13 @@
 
 namespace HE\TwoFactorAuth\Model\Validate;
 
-require_once(Mage::getBaseDir('lib') . DS . 'GoogleAuthenticator' . DS . 'PHPGangsta' . DS . 'GoogleAuthenticator.php');
-
-class Google extends \HE\TwoFactorAuth\Model\Validate
+class Google extends \HE\TwoFactorAuth\Model\AbstractValidate
 {
-
-    /**
-     * @var \HE\TwoFactorAuth\Helper\Data
-     */
-    protected $twoFactorAuthHelper;
-
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    protected $logger;
 
     /**
      * @var \Magento\User\Model\UserFactory
      */
-    protected $userUserFactory;
+    protected $userFactory;
 
     /**
      * @var \Magento\Backend\Model\Auth\Session
@@ -40,38 +28,50 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
     protected $backendAuthSession;
 
     /**
-     * @var 
+     * @var \PHPGangsta_GoogleAuthenticatorFactory
      */
-    protected $;
+    protected $googleAuthenticatorFactory;
 
+    /**
+     * Google constructor.
+     * @param \HE\TwoFactorAuth\Helper\Data $helper
+     * @param \Psr\Log\LoggerInterface $logger
+     * @param \Magento\User\Model\UserFactory $userFactory
+     * @param \Magento\Backend\Model\Auth\Session $backendAuthSession
+     * @param \PHPGangsta_GoogleAuthenticatorFactory $googleAuthenticatorFactory
+     * @param array $data
+     */
     public function __construct(
-        \HE\TwoFactorAuth\Helper\Data $twoFactorAuthHelper,
+        \HE\TwoFactorAuth\Helper\Data $helper,
         \Psr\Log\LoggerInterface $logger,
-        \Magento\User\Model\UserFactory $userUserFactory,
+        \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\Auth\Session $backendAuthSession,
-         $
+        \PHPGangsta_GoogleAuthenticatorFactory $googleAuthenticatorFactory,
+        array $data = []
     )
     {
-        $this-> = $;
-        $this->twoFactorAuthHelper = $twoFactorAuthHelper;
-        $this->logger = $logger;
-        $this->userUserFactory = $userUserFactory;
+        $this->userFactory = $userFactory;
         $this->backendAuthSession = $backendAuthSession;
-        $this->_shouldLog = $this->twoFactorAuthHelper->shouldLog();
+        $this->googleAuthenticatorFactory = $googleAuthenticatorFactory;
+
+        parent::__construct($helper, $logger, $data);
     }
 
     /**
      * HOTP - counter based
      * TOTP - time based
+     *
+     * @param $username
+     * @param string $tokenType
      */
-    public function getToken($username, $tokentype = "TOTP")
+    public function getToken($username, $tokenType = "TOTP")
     {
-        $token = $this->setUser($username, $tokentype);
-        if ($this->_shouldLog) {
+        $token = $this->setUser($username, $tokenType);
+        if ($this->helper->shouldLog()) {
             $this->logger->debug("token = " . var_export($token, true));
         }
 
-        $user = $this->userUserFactory->create()->loadByUsername($username);
+        $user = $this->userFactory->create()->loadByUsername($username);
         $user->setTwofactorauthToken($token);
         //$user->save(); //password gets messed up after saving?!
     }
@@ -89,7 +89,8 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
      */
     public function generateSecret()
     {
-        $ga = $this->->create();
+        /** @var \PHPGangsta_GoogleAuthenticator $ga */
+        $ga = $this->googleAuthenticatorFactory->create();
         $secret = $ga->createSecret();
 
         return $secret;
@@ -101,10 +102,11 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
     public function generateQRCodeUrl($secret, $username)
     {
         if ((empty($secret)) || (empty($username))) {
-            return;
+            return '';
         }
 
-        $ga = $this->->create();
+        /** @var \PHPGangsta_GoogleAuthenticator $ga */
+        $ga = $this->googleAuthenticatorFactory->create();
         $url = $ga->getQRCodeGoogleUrl($username, $secret);
 
         return $url;
@@ -122,9 +124,9 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
 
         // get user's shared secret
         $user = $this->backendAuthSession->getUser();
-        $admin_user = $this->userUserFactory->create()->load($user->getId());
+        $admin_user = $this->userFactory->create()->load($user->getId());
 
-        $ga = $this->->create();
+        $ga = $this->googleAuthenticatorFactory->create();
         $secret = Mage::helper('core')->decrypt($admin_user->getTwofactorGoogleSecret());
 
         return $ga->verifyCode($secret, $code, 1);
@@ -135,7 +137,7 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
      */
     function getDataBad($username, $index = null) // this was causing problems, not sure why...
     {
-        $user = $this->userUserFactory->create()->loadByUsername($username);
+        $user = $this->userFactory->create()->loadByUsername($username);
 
         return $user->getTwofactorauthToken() == null ? false : $user->getTwofactorauthToken();
     }
@@ -145,7 +147,7 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
      */
     function putData($username, $data)
     {
-        $user = $this->userUserFactory->create()->loadByUsername($username);
+        $user = $this->userFactory->create()->loadByUsername($username);
         $user->setTwofactorauthToken("test");
         $user->save();
     }
@@ -155,5 +157,21 @@ class Google extends \HE\TwoFactorAuth\Model\Validate
      */
     function getUsers()
     {
+    }
+
+    /**
+     * @param $user
+     */
+    public function signRequest($user)
+    {
+        // TODO: Implement signRequest() method.
+    }
+
+    /**
+     * @param $response
+     */
+    public function verifyResponse($response)
+    {
+        // TODO: Implement verifyResponse() method.
     }
 }

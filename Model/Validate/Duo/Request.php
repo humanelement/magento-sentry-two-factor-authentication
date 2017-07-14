@@ -1,6 +1,5 @@
 <?php
-
-/*
+/**
  * Author   : Greg Croasdill
  *            Human Element, Inc http://www.human-element.com
  *
@@ -20,27 +19,43 @@
  *   https://www.duosecurity.com
  */
 
-class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstract
+namespace HE\TwoFactorAuth\Model\Validate\Duo;
+
+class Request extends \Magento\Framework\DataObject
 {
-    var $_path;   //rest request path
-    var $_params; //call parameters
-    var $_method; //call method (GET|POST)
-    var $_date;   //current time, formatted as RFC 2822.
+    private $_path;   //rest request path
+    private $_params; //call parameters
+    private $_method; //call method (GET|POST)
+    private $_date;   //current time, formatted as RFC 2822.
 
     // these values are supplied on the DUO integration control panel
-    var $_host;   //DUO API host
-    var $_ikey;
-    var $_skey;
+    private $_host;   //DUO API host
+    private $_ikey;
+    private $_skey;
 
     // a unique key for your application, set in the Magento Admin
-    var $_akey;
+    private $_akey;
 
     // a file to keep the logo associated with the DUO integration
-    var $_logoFile;
+    private $_logoFile;
 
     /***
      * Initialize the request environment
      */
+
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    protected $scopeConfig;
+
+    public function __construct(
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        array $data = []
+    ) {
+        $this->scopeConfig = $scopeConfig;
+        parent::__construct($data);
+    }
+
     public function _construct()
     {
         $this->_params = array();
@@ -48,16 +63,16 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         $this->_method = "GET";
         $this->_date = date("r");
 
-        $this->_host = Mage::getStoreConfig('he2faconfig/duo/host');
-        $this->_ikey = Mage::helper('core')->decrypt(Mage::getStoreConfig('he2faconfig/duo/ikey'));
-        $this->_skey = Mage::helper('core')->decrypt(Mage::getStoreConfig('he2faconfig/duo/skey'));
-        $this->_akey = Mage::helper('core')->decrypt(Mage::getStoreConfig('he2faconfig/duo/akey'));
+        $this->_host = $this->scopeConfig->getValue('he2faconfig/duo/host', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $this->_ikey = Mage::helper('core')->decrypt($this->scopeConfig->getValue('he2faconfig/duo/ikey', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+        $this->_skey = Mage::helper('core')->decrypt($this->scopeConfig->getValue('he2faconfig/duo/skey', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+        $this->_akey = Mage::helper('core')->decrypt($this->scopeConfig->getValue('he2faconfig/duo/akey', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
 
         $this->_logoFile = Mage::getBaseDir('media') . "/duo_logo.png";
 
     }
 
-    /***
+    /**
      * create the request cannon string to be used in the password hash.  Data must
      * match the request parameters
      *
@@ -81,7 +96,7 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         return implode("\n", $cannon);
     }
 
-    /***
+    /**
      * TBD
      */
     protected function _getPostfields()
@@ -89,7 +104,7 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
 
     }
 
-    /***
+    /**
      * Create a hash string to be used as the password for the request
      * Must be sha1 encrypted
      *
@@ -100,7 +115,7 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         return hash_hmac('sha1', $this->_makeCannon(), $this->_skey);
     }
 
-    /***
+    /**
      * Add the date to the request headers, required for validation of authentication request
      *
      * @return array
@@ -110,7 +125,7 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         return array("Date: $this->_date");
     }
 
-    /***
+    /**
      * Format parameters for GET calls and return full URL with query string
      *
      * @param string $url
@@ -126,7 +141,7 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         }
     }
 
-    /***
+    /**
      * Call the DUO rest service and return the results
      *
      * @param bool $raw
@@ -134,7 +149,6 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
      *
      * @return array|bool|mixed
      */
-
     protected function _doRequest($raw = false, $debug = false)
     {
         if ($this->_path == "") {
@@ -184,12 +198,11 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         }
     }
 
-    /***
+    /**
      * Check to see if the DUO service is reachable
      *
      * @return bool
      */
-
     public function ping()
     {
         $this->_path = "/auth/v2/ping";
@@ -202,12 +215,11 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         }
     }
 
-    /***
+    /**
      * Check to see if the integration settings are valid
      *
      * @return bool
      */
-
     public function check()
     {
         $this->_path = "/auth/v2/check";
@@ -220,7 +232,7 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         }
     }
 
-    /***
+    /**
      * Get the logo, if one is registered with DUO, for the integration
      *
      * @return bool
@@ -241,24 +253,37 @@ class HE_TwoFactorAuth_Model_Validate_Duo_Request extends Mage_Core_Model_Abstra
         }
     }
 
-    // TODO -   the remainder of the DUO protocol will be filled out later if needed
-
+    /**
+     * @TODO The remainder of the DUO protocol will be filled out later if needed
+     */
     public function enroll()
     {
     }
 
+    /**
+     * @TODO The remainder of the DUO protocol will be filled out later if needed
+     */
     public function enroll_status()
     {
     }
 
+    /**
+     * @TODO The remainder of the DUO protocol will be filled out later if needed
+     */
     public function preauth()
     {
     }
 
+    /**
+     * @TODO The remainder of the DUO protocol will be filled out later if needed
+     */
     public function auth()
     {
     }
 
+    /**
+     * @TODO The remainder of the DUO protocol will be filled out later if needed
+     */
     public function auth_status()
     {
     }
