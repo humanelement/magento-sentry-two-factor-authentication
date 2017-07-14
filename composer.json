@@ -3,7 +3,8 @@
     "description": "Magento 2 Two Factor Authentication Module",
     "require": {
         "php": "~5.5.0|~5.6.0|~7.0.0",
-        "duosecurity/duo_php": "^1.0"
+        "duosecurity/duo_php": "^1.0",
+        "phpgangsta/googleauthenticator": "dev-master"
     },
     "type": "magento2-module",
     "version": "2.0.0",
