@@ -33,9 +33,9 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $flagDir;
 
     /**
-     * @var \HE\TwoFactorAuth\Model\Validate\
+     * @var \HE\TwoFactorAuth\Model\Validate\Factory
      */
-    protected $twoFactorAuthValidate;
+    protected $validateFactory;
 
     /**
      * @var \Magento\Store\Model\StoreManagerInterface
@@ -48,27 +48,39 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $encryptor;
 
     /**
+     * @var \Magento\Framework\Module\ModuleList
+     */
+    protected $moduleList;
+
+    /**
+     * @var string
+     */
+    protected $version;
+
+    /**
      * Data constructor.
      *
-     * @TODO Need to implement a factory or something to Inject the correct TwoFactor Provider via DI. Currently not in a working state
      * @param \Magento\Framework\App\Helper\Context $context
-     * @param \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate
+     * @param \HE\TwoFactorAuth\Model\Validate\Factory $validateFactory
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
      * @param \Magento\Framework\Filesystem $filesystem
      * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
+     * @param \Magento\Framework\Module\ModuleListInterface $moduleList
      */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
-        \HE\TwoFactorAuth\Model\Validate $twoFactorAuthValidate,
+        \HE\TwoFactorAuth\Model\Validate\Factory $validateFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\Filesystem $filesystem,
-        \Magento\Framework\Encryption\EncryptorInterface $encryptor
+        \Magento\Framework\Encryption\EncryptorInterface $encryptor,
+        \Magento\Framework\Module\ModuleListInterface $moduleList
     )
     {
-        $this->twoFactorAuthValidate = $twoFactorAuthValidate;
+        $this->validateFactory = $validateFactory;
         $this->storeManager = $storeManager;
         $this->flagDir = $filesystem->getDirectoryWrite(self::FLAG_DIR);
         $this->encryptor = $encryptor;
+        $this->moduleList = $moduleList;
 
         parent::__construct($context);
     }
@@ -92,7 +104,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             return true;
         }
 
-        $method = $this->twoFactorAuthValidate;
+        $method = $this->validateFactory->create($provider);
 
         if (!$method) {
             return true;
@@ -238,6 +250,119 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     {
         return $this->scopeConfig->getValue(
             'he2faconfig/duo/validated',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get module version
+     *
+     * @return string
+     */
+    public function getVersion()
+    {
+        if (!$this->version) {
+            $moduleName = $this->_getModuleName();
+
+            if ($this->moduleList->has($moduleName)) {
+                $moduleData = $this->moduleList->getOne($moduleName);
+
+                if ($moduleData) {
+                    $this->version = $moduleData['setup_version'];
+                }
+            }
+        }
+
+        return $this->version;
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getHeLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/human-element-link',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getNexcessLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/nexcess-link',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getDocsLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/docs-link',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getSubmitBugLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/submit-bug-link',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getMultiAuthLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/multi-auth-link',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getMageSupportLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/mage-support-link',
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Get a link
+     *
+     * @return string
+     */
+    public function getContactLink()
+    {
+        return $this->scopeConfig->getValue(
+            'he2falinks/contact-link',
             ScopeInterface::SCOPE_STORE
         );
     }

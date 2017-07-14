@@ -8,18 +8,41 @@
 
 namespace HE\TwoFactorAuth\Block\Adminhtml\System\Config\Fieldset;
 
+use Magento\Backend\Block\Template;
+use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Data\Form\Element\Renderer\RendererInterface;
-use Magento\Backend\Block\AbstractBlock;
 
 /**
  * Renderer for Hint Banner in System Configuration
  */
-class Hint extends AbstractBlock implements RendererInterface
+class Hint extends Template implements RendererInterface
 {
     /**
      * @var string
      */
-    protected $_template = 'he_twofactor/system/config/fieldset/hint.phtml';
+    protected $_template = 'HE_TwoFactorAuth::system/config/fieldset/hint.phtml';
+
+    /**
+     * @var \HE\TwoFactorAuth\Helper\Data
+     */
+    protected $twoFactorAuthHelper;
+
+    /**
+     * Hint constructor.
+     *
+     * @param Template\Context $context
+     * @param \HE\TwoFactorAuth\Helper\Data $twoFactorAuthHelper
+     * @param array $data
+     */
+    public function __construct(
+        \Magento\Backend\Block\Template\Context $context,
+        \HE\TwoFactorAuth\Helper\Data $twoFactorAuthHelper,
+        array $data = []
+    )
+    {
+        $this->twoFactorAuthHelper = $twoFactorAuthHelper;
+        parent::__construct($context, $data);
+    }
 
     /**
      * Render fieldset html
@@ -28,16 +51,21 @@ class Hint extends AbstractBlock implements RendererInterface
      *
      * @return string
      */
-    public function render(\Magento\Framework\Data\Form\Element\AbstractElement $element)
+    public function render(AbstractElement $element)
     {
         return $this->toHtml();
     }
 
     /**
-     * @return string
+     * Remove http from start of link so it can be used as a label in the paragraph
+     *
+     * @param string $link
+     * @return mixed
      */
-    public function getTwoFactorAuthVersion()
+    public function simplifyLinkLabel($link)
     {
-        return (string)Mage::getConfig()->getNode('modules/HE_TwoFactorAuth/version');
+        $link = str_replace('https://www.', '', $link);
+        $link = str_replace('http://www.', '', $link);
+        return $link;
     }
 }

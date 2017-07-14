@@ -10,14 +10,44 @@ namespace HE\TwoFactorAuth\Model\Validate;
 
 interface ValidateInterface
 {
+    /**
+     * Google validator type
+     */
+    const TYPE_DISABLED = 'disabled';
+
+    /**
+     * Warning type
+     */
+    const TYPE_DUO = 'duo';
+
+    /**
+     * Duo validator type
+     */
+    const TYPE_GOOGLE = 'google';
+
+    /**
+     *
+     */
     const TFA_STATE_NONE = 0;
 
+    /**
+     *
+     */
     const TFA_STATE_PROCESSING = 1;
 
+    /**
+     *
+     */
     const TFA_STATE_ACTIVE = 2;
 
+    /**
+     *
+     */
     const TFA_CHECK_FAIL = 0;
 
+    /**
+     *
+     */
     const TFA_CHECK_SUCCESS = 1;
 
     /**

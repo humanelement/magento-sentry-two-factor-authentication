@@ -11,6 +11,9 @@
             <contact-link>http://www.human-element.com/contact/#contact-form</contact-link>
         </he2falinks>
         <he2faconfig>
+            <general>
+                <enabled>0</enabled>
+            </general>
             <providers>
                 <disabled>
                     <title>Disable multi-factor authentication</title>

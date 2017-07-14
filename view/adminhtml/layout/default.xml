@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
-<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
-        <js class="HE_TwoFactorAuth::he_twofactor/adminpanel.js"/>
-        <action method="addItem">
-            <argument name="type" xsi:type="string">skin_css</argument>
-            <argument name="name" xsi:type="string">he_twofactor/css/admin.css</argument>
-        </action>
+        <js class="HE_TwoFactorAuth::js/adminpanel.js"/>
+        <css src="HE_TwoFactorAuth::css/admin.css"/>
     </head>
 </page>

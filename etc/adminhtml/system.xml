@@ -13,7 +13,14 @@
             <group id="hint" type="text" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="0">
                 <frontend_model>HE\TwoFactorAuth\Block\Adminhtml\System\Config\Fieldset\Hint</frontend_model>
             </group>
-            <group id="control" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="0">
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                <label>General Settings</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Enable module</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+            <group id="control" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
                 <label>Provider Selection</label>
                 <comment>Choose an authentication provider or disable multi-factor authentication</comment>
                 <field id="provider" translate="label" type="select" showInDefault="1" showInWebsite="1" showInStore="0">
@@ -45,7 +52,7 @@
                     </comment>
                 </field>
             </group>
-            <group id="duo" type="text" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="0" translate="label">
+            <group id="duo" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="0" translate="label">
                 <label>Duo Security</label>
                 <comment><![CDATA[<p><strong>About Duo Security</strong><br/>Duo Security is a leading provider of online
                 Two Factor authentication. For more information, please visit their
@@ -92,7 +99,7 @@
                     </comment>
                 </field>
             </group>
-            <group id="google" translate="label" type="text" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="0">
+            <group id="google" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
                 <label>Google Authenticate</label>
                 <comment>
                     <![CDATA[<p><strong>About Google Authenticate</strong><br/>Google Authenticate is a popular two-factor
