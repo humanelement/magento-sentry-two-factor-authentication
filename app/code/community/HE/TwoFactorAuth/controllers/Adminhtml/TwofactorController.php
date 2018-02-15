@@ -20,6 +20,9 @@
 class HE_TwoFactorAuth_Adminhtml_TwofactorController extends Mage_Adminhtml_Controller_Action
 {
 
+   	//allow all admin accounts to access the 2FA login screen
+	protected function _isAllowed() { return true; } 
+    
     public function _construct()
     {
         $this->_shouldLog = Mage::helper('he_twofactorauth')->shouldLog();
